@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeForge — Master Your Keyboard</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --surface2: #1a1a2e;
+    --border: #2a2a4a;
+    --text: #e0e0ff;
+    --text-dim: #5a5a8a;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --combo1: #7c3aed;
+    --combo2: #06b6d4;
+    --combo3: #f59e0b;
+    --combo4: #f97316;
+    --combo5: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  canvas#particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.96);
+  }
+
+  /* ── MENU ── */
+  #screen-menu { gap: 32px; }
+
+  .logo {
+    text-align: center;
+    line-height: 1;
+  }
+
+  .logo h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 32px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .card h2 {
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .mode-btn {
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    color: var(--text);
+  }
+
+  .mode-btn:hover, .mode-btn.active {
+    border-color: var(--accent);
+    background: #1e1040;
+    box-shadow: 0 0 20px rgba(124,58,237,0.3);
+  }
+
+  .mode-btn .mode-icon { font-size: 2rem; margin-bottom: 8px; }
+  .mode-btn .mode-name { font-weight: 700; font-size: 0.95rem; }
+  .mode-btn .mode-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+
+  .diff-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .diff-btn {
+    flex: 1;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .diff-btn:hover, .diff-btn.active { border-color: var(--accent2); color: var(--accent2); }
+
+  .start-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    padding: 18px 48px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: white;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 24px rgba(124,58,237,0.4);
+  }
+
+  .start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(124,58,237,0.6);
+  }
+
+  .menu-stats {
+    display: flex;
+    gap: 24px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .menu-stats strong {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  /* ── HUD (top bar during game) ── */
+  #hud {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: rgba(10,10,18,0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  #hud.hidden { display: none; }
+
+  .hud-stat {
+    text-align: center;
+    min-width: 60px;
+  }
+
+  .hud-stat .val {
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .hud-stat .lbl {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  #hud-wpm .val { color: var(--accent2); }
+  #hud-acc .val { color: var(--green); }
+
+  .combo-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    transition: all 0.3s;
+    font-weight: 800;
+    font-size: 0.95rem;
+  }
+
+  .combo-display.glow-1 { border-color: var(--combo1); box-shadow: 0 0 12px var(--combo1); color: var(--combo1); }
+  .combo-display.glow-2 { border-color: var(--combo2); box-shadow: 0 0 16px var(--combo2); color: var(--combo2); }
+  .combo-display.glow-3 { border-color: var(--combo3); box-shadow: 0 0 20px var(--combo3); color: var(--combo3); animation: comboPulse 0.8s ease-in-out infinite; }
+  .combo-display.glow-4 { border-color: var(--combo4); box-shadow: 0 0 24px var(--combo4); color: var(--combo4); animation: comboPulse 0.6s ease-in-out infinite; }
+  .combo-display.glow-5 { border-color: var(--combo5); box-shadow: 0 0 32px var(--combo5); color: var(--combo5); animation: comboPulse 0.4s ease-in-out infinite; }
+
+  @keyframes comboPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  .xp-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .xp-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .xp-bar-bg {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .xp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px;
+    transition: width 0.5s ease;
+  }
+
+  #btn-pause {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+
+  #btn-pause:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── GAME SCREEN ── */
+  #screen-game {
+    padding-top: 80px;
+    justify-content: center;
+  }
+
+  .game-area {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .progress-bar-wrap {
+    height: 4px;
+    background: var(--surface);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px;
+    transition: width 0.3s;
+  }
+
+  /* Sprint word display */
+  #words-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    min-height: 120px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #words-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    line-height: 1;
+  }
+
+  .word {
+    display: inline-flex;
+    gap: 0;
+    font-size: 1.6rem;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: background 0.15s;
+  }
+
+  .word.current {
+    background: rgba(124,58,237,0.15);
+    outline: 2px solid rgba(124,58,237,0.4);
+  }
+
+  .word.done { opacity: 0.3; }
+
+  .char { transition: color 0.1s; color: var(--text-dim); }
+  .char.correct { color: var(--green); }
+  .char.wrong { color: var(--red); text-decoration: underline; }
+  .char.cursor { color: var(--text); }
+
+  .word.shake {
+    animation: shake 0.3s ease;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    60% { transform: translateX(6px); }
+    80% { transform: translateX(-3px); }
+  }
+
+  #typing-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    top: 0; left: 0;
+    width: 1px; height: 1px;
+  }
+
+  .click-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    background: rgba(10,10,18,0.7);
+    backdrop-filter: blur(4px);
+    border-radius: 16px;
+    transition: opacity 0.2s;
+  }
+
+  .click-hint.gone { opacity: 0; pointer-events: none; }
+
+  /* Survival mode canvas */
+  #survival-canvas {
+    display: none;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 800px;
+  }
+
+  #survival-input-row {
+    display: none;
+    gap: 12px;
+    align-items: center;
+  }
+
+  #survival-input {
+    flex: 1;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 1.3rem;
+    font-family: 'Courier New', monospace;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #survival-input:focus { border-color: var(--accent); }
+
+  /* Zen mode */
+  #zen-display {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 800px;
+  }
+
+  #zen-text-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    font-size: 1.4rem;
+    font-family: 'Courier New', monospace;
+    color: var(--text);
+    min-height: 160px;
+    resize: none;
+    outline: none;
+    width: 100%;
+    line-height: 1.7;
+    transition: border-color 0.2s;
+  }
+
+  #zen-text-area:focus { border-color: var(--accent); }
+
+  /* Countdown overlay */
+  #countdown-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10,10,18,0.85);
+    font-size: 8rem;
+    font-weight: 900;
+    color: var(--accent2);
+    animation: none;
+  }
+
+  #countdown-overlay.hidden { display: none; }
+
+  @keyframes countPop {
+    0% { transform: scale(1.5); opacity: 0; }
+    50% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0; }
+  }
+
+  .count-anim { animation: countPop 0.8s ease forwards; }
+
+  /* ── RESULTS ── */
+  #screen-results { gap: 24px; }
+
+  .results-header {
+    text-align: center;
+  }
+
+  .results-header h2 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .results-header p {
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card .big {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .stat-card .label {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  .stat-card.wpm .big { color: var(--accent2); }
+  .stat-card.acc .big { color: var(--green); }
+  .stat-card.xp .big { color: var(--accent3); }
+  .stat-card.combo .big { color: var(--combo3); }
+
+  .achievements-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 640px;
+  }
+
+  .achievement-badge {
+    background: var(--surface);
+    border: 2px solid var(--accent3);
+    border-radius: 12px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent3);
+    animation: badgePop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    opacity: 0;
+  }
+
+  @keyframes badgePop {
+    0% { transform: scale(0.5) translateY(20px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .leaderboard {
+    width: 100%;
+    max-width: 640px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .lb-header {
+    padding: 12px 20px;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 40px 1fr 80px 80px 80px;
+  }
+
+  .lb-row {
+    padding: 10px 20px;
+    display: grid;
+    grid-template-columns: 40px 1fr 80px 80px 80px;
+    align-items: center;
+    border-bottom: 1px solid rgba(42,42,74,0.5);
+    font-size: 0.9rem;
+    transition: background 0.15s;
+  }
+
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row.new-entry { background: rgba(124,58,237,0.15); }
+  .lb-row .rank { color: var(--text-dim); font-weight: 700; }
+  .lb-row .lb-wpm { color: var(--accent2); font-weight: 800; }
+  .lb-row .lb-acc { color: var(--green); }
+
+  .results-btns {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 28px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Achievement toast */
+  #toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .toast {
+    background: var(--surface);
+    border: 2px solid var(--accent3);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent3);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    animation: toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+
+  @keyframes toastIn {
+    0% { transform: translateX(120px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  }
+
+  .toast.out {
+    animation: toastOut 0.3s ease forwards;
+  }
+
+  @keyframes toastOut {
+    0% { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(120px); opacity: 0; }
+  }
+
+  /* Pause overlay */
+  #pause-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(10,10,18,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(8px);
+  }
+
+  #pause-overlay.hidden { display: none; }
+
+  #pause-overlay h2 {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--text-dim);
+  }
+
+  /* Diff suggestion banner */
+  #diff-suggest {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: var(--surface);
+    border: 2px solid var(--accent3);
+    border-radius: 999px;
+    padding: 10px 24px;
+    font-size: 0.85rem;
+    color: var(--accent3);
+    font-weight: 700;
+    display: none;
+    gap: 12px;
+    align-items: center;
+    animation: toastIn 0.4s ease;
+  }
+
+  #diff-suggest button {
+    background: var(--accent3);
+    border: none;
+    border-radius: 999px;
+    padding: 4px 14px;
+    color: var(--bg);
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- ── MENU ── -->
+<div id="screen-menu" class="screen">
+  <div class="logo">
+    <h1>TypeForge</h1>
+    <p>Master Your Keyboard</p>
+  </div>
+
+  <div class="card">
+    <h2>Choose Mode</h2>
+    <div class="mode-grid">
+      <button class="mode-btn active" data-mode="sprint">
+        <div class="mode-icon">⚡</div>
+        <div class="mode-name">Sprint</div>
+        <div class="mode-desc">Type passages fast</div>
+      </button>
+      <button class="mode-btn" data-mode="survival">
+        <div class="mode-icon">🌊</div>
+        <div class="mode-name">Survival</div>
+        <div class="mode-desc">Don't let words fall</div>
+      </button>
+      <button class="mode-btn" data-mode="zen">
+        <div class="mode-icon">🧘</div>
+        <div class="mode-name">Zen</div>
+        <div class="mode-desc">Practice freely</div>
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Difficulty</h2>
+    <div class="diff-row">
+      <button class="diff-btn active" data-diff="easy">Easy</button>
+      <button class="diff-btn" data-diff="medium">Medium</button>
+      <button class="diff-btn" data-diff="hard">Hard</button>
+      <button class="diff-btn" data-diff="expert">Expert</button>
+    </div>
+  </div>
+
+  <button class="start-btn" id="btn-start">START →</button>
+
+  <div class="menu-stats">
+    <div><strong id="ms-level">1</strong>Level</div>
+    <div><strong id="ms-streak">0</strong>Day Streak 🔥</div>
+    <div><strong id="ms-best">0</strong>Best WPM</div>
+    <div><strong id="ms-games">0</strong>Games Played</div>
+  </div>
+</div>
+
+<!-- ── HUD ── -->
+<div id="hud" class="hidden">
+  <div class="hud-stat" id="hud-wpm"><div class="val">0</div><div class="lbl">WPM</div></div>
+  <div class="hud-stat" id="hud-acc"><div class="val">100%</div><div class="lbl">Acc</div></div>
+  <div class="combo-display" id="hud-combo">✦ 1×</div>
+  <div class="xp-bar-wrap">
+    <div class="xp-bar-labels">
+      <span id="xp-level-label">Level 1</span>
+      <span id="xp-progress-label">0 / 100 XP</span>
+    </div>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+  </div>
+  <button id="btn-pause">⏸ ESC</button>
+</div>
+
+<!-- ── GAME SCREEN ── -->
+<div id="screen-game" class="screen hidden">
+  <div class="game-area" id="game-area-sprint">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+    <div id="words-display">
+      <div id="words-container"></div>
+      <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <div class="click-hint" id="click-hint">Click here or press any key to focus</div>
+    </div>
+  </div>
+
+  <canvas id="survival-canvas" width="800" height="440"></canvas>
+  <div id="survival-input-row">
+    <input id="survival-input" type="text" placeholder="Type the falling words…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  </div>
+
+  <div id="zen-display">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="zen-progress" style="width:0%"></div>
+    </div>
+    <textarea id="zen-text-area" rows="5" placeholder="Start typing — the passage will appear here…"></textarea>
+  </div>
+</div>
+
+<!-- ── RESULTS ── -->
+<div id="screen-results" class="screen hidden">
+  <div class="results-header">
+    <h2 id="results-title">Round Complete!</h2>
+    <p id="results-sub">Here's how you did</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card wpm"><div class="big" id="res-wpm">0</div><div class="label">WPM</div></div>
+    <div class="stat-card acc"><div class="big" id="res-acc">0%</div><div class="label">Accuracy</div></div>
+    <div class="stat-card xp"><div class="big" id="res-xp">+0</div><div class="label">XP Earned</div></div>
+    <div class="stat-card combo"><div class="big" id="res-combo">1×</div><div class="label">Best Combo</div></div>
+  </div>
+
+  <div class="achievements-row" id="achievements-row"></div>
+
+  <div class="leaderboard">
+    <div class="lb-header">
+      <span>#</span><span>Date</span><span>WPM</span><span>Acc</span><span>Mode</span>
+    </div>
+    <div id="lb-rows"></div>
+  </div>
+
+  <div class="results-btns">
+    <button class="start-btn" id="btn-play-again">Play Again →</button>
+    <button class="btn-secondary" id="btn-menu">Menu</button>
+  </div>
+</div>
+
+<!-- ── OVERLAYS ── -->
+<div id="countdown-overlay" class="hidden"><span id="count-num">3</span></div>
+<div id="pause-overlay" class="hidden">
+  <h2>PAUSED</h2>
+  <button class="start-btn" id="btn-resume">Resume</button>
+  <button class="btn-secondary" id="btn-quit">Quit to Menu</button>
+</div>
+<div id="toast-container"></div>
+<div id="diff-suggest" style="display:none;">
+  <span id="diff-suggest-text"></span>
+  <button id="diff-suggest-btn">Switch</button>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  PARTICLE BACKGROUND
+// ════════════════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H, pts;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function init() {
+    pts = Array.from({length: 60}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 2 + 0.5
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+
+      for (let j = i + 1; j < pts.length; j++) {
+        const q = pts[j];
+        const dx = p.x - q.x, dy = p.y - q.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 120) {
+          ctx.strokeStyle = `rgba(124,58,237,${0.15 * (1 - d/120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = 'rgba(124,58,237,0.5)';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); init(); });
+  resize(); init(); draw();
+})();
+
+// ════════════════════════════════════════════════════════
+//  AUDIO ENGINE
+// ════════════════════════════════════════════════════════
+const SoundFX = (() => {
+  let ctx;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  }
+  function beep(freq, dur, type = 'sine', gain = 0.15) {
+    try {
+      const c = getCtx();
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(gain, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+      o.start(); o.stop(c.currentTime + dur);
+    } catch(e) {}
+  }
+  return {
+    keypress() { beep(880, 0.04, 'square', 0.05); },
+    correct()  { beep(1047, 0.08, 'sine', 0.1); },
+    error()    { beep(220, 0.15, 'sawtooth', 0.1); },
+    combo(n)   { beep(440 + n * 120, 0.12, 'sine', 0.12); },
+    levelUp()  {
+      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'sine', 0.18), i * 100));
+    },
+    achievement() {
+      [784, 1047, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'sine', 0.15), i * 80));
+    },
+    gameOver() { beep(220, 0.5, 'sawtooth', 0.15); }
+  };
+})();
+
+// ════════════════════════════════════════════════════════
+//  WORD BANK
+// ════════════════════════════════════════════════════════
+const WordBank = (() => {
+  const sentences = {
+    easy: [
+      "the cat sat on the mat and looked out the window",
+      "she went to the store to buy some food for dinner",
+      "the sun came out and the sky turned a bright blue",
+      "he ran down the hill and made it to the park just in time",
+      "we like to play games and have fun with our friends",
+      "the dog slept by the fire while the rain fell outside",
+      "my mom made soup and we all sat down to eat",
+      "the bird sang a song from the top of the old tree",
+      "the kids played in the yard until it got dark",
+      "he picked up the book and read it all in one day",
+      "she put on her coat and walked out into the cold air",
+      "the car stopped at the red light and then drove on",
+      "we looked up at the stars and tried to find the big dipper",
+      "the baby smiled and clapped her hands when she saw the dog",
+      "he made a cup of tea and sat by the warm window",
+      "the class went on a trip to see the animals at the zoo",
+      "she found a coin on the ground and put it in her pocket",
+      "the team won the game and everyone cheered out loud",
+      "he fed the ducks by the pond on a cold winter morning",
+      "the little boy drew a picture of his house and his cat",
+    ],
+    medium: [
+      "learning to type faster takes daily practice and a lot of patience",
+      "the quick brown fox jumps over the lazy dog by the fence",
+      "technology has changed the way people work and talk to each other",
+      "the mountains were covered in snow while the valleys stayed warm and green",
+      "she decided to start a garden and planted tomatoes herbs and flowers",
+      "the library was quiet and the old books smelled like another era",
+      "he stayed up late finishing the project and felt proud when it was done",
+      "the chef prepared a fresh meal using ingredients from the local market",
+      "they walked along the river trail and watched the sunset together",
+      "the storm knocked out the power and the whole street went dark",
+      "reading every day improves your vocabulary and makes you a better writer",
+      "the old clock on the wall ticked steadily through the long afternoon",
+      "she trained for months before she felt ready to run the marathon",
+      "the office was busy on Monday mornings but calm by Friday afternoon",
+      "he wrote a long letter to his friend who had moved overseas",
+      "the children built a sandcastle that the next wave completely washed away",
+      "music has the power to change your mood in a matter of seconds",
+      "the map was old and some of the roads no longer existed",
+      "she laughed so hard that tears ran down her face",
+      "the puppy chewed through three pairs of shoes before learning to behave",
+    ],
+    hard: [
+      "discipline and consistency are far more valuable than occasional bursts of motivation",
+      "the ancient ruins revealed evidence of a civilization that vanished without explanation",
+      "she argued convincingly that the environmental consequences outweighed the economic benefits",
+      "developing good software requires careful planning clear communication and thorough testing",
+      "the documentary explored the psychological effects of prolonged isolation on the human mind",
+      "extraordinary results are usually the product of unremarkable habits repeated persistently over time",
+      "the philosopher questioned whether consciousness could ever be fully explained by neuroscience",
+      "climate change requires unprecedented international cooperation to achieve meaningful reductions in emissions",
+      "the experiment demonstrated that memory is far more reconstructive than previously believed",
+      "understanding compound interest is one of the most financially important lessons you can learn",
+      "the novel challenged the conventional boundaries between biography and fiction in remarkable ways",
+      "she negotiated the contract carefully making sure every clause reflected her original intentions",
+      "the algorithm processed thousands of data points and identified patterns invisible to the human eye",
+      "resilience is not the absence of difficulty but the capacity to recover from it",
+      "the archaeological discovery forced historians to reconsider their understanding of the ancient trade routes",
+      "learning a second language rewires the brain in ways that benefit overall cognitive function",
+      "the committee debated for hours before reaching a compromise that satisfied nobody completely",
+      "the satellite transmitted data continuously from its orbit more than four hundred kilometres above earth",
+      "perfectionism can be both a driving force and a significant obstacle to creative work",
+      "the bridge was designed to withstand earthquakes winds and the weight of heavy traffic simultaneously",
+    ],
+    expert: [
+      "the neuropsychological implications of prolonged multitasking on executive function remain a subject of considerable scientific debate",
+      "entrepreneurship demands an extraordinary combination of resilience creativity analytical thinking and tolerance for ambiguity",
+      "the disproportionate socioeconomic consequences of technological unemployment require comprehensive governmental and institutional responses",
+      "electromagnetic interference can compromise the integrity of sensitive instrumentation in ways that are extraordinarily difficult to diagnose",
+      "the disambiguation of overlapping jurisdictional responsibilities frequently undermines the effectiveness of international regulatory frameworks",
+      "pharmaceutical development involves extraordinarily complex processes of synthesis testing refinement and regulatory approval spanning many years",
+      "the philosophical distinction between epistemological uncertainty and ontological indeterminacy is frequently misunderstood even by specialists",
+      "cryptographic infrastructure underpins the security of financial telecommunications healthcare and governmental systems simultaneously",
+      "the juxtaposition of unprecedented technological capability and deteriorating institutional trust characterises contemporary democratic societies",
+      "photosynthesis is a biochemical process of remarkable sophistication that converts electromagnetic radiation into chemical energy with extraordinary efficiency",
+      "the unconscionable exploitation of cognitive vulnerabilities by algorithmic recommendation systems raises profound ethical and regulatory questions",
+      "palaeontological evidence increasingly suggests that the evolutionary divergence of species occurred through mechanisms far more heterogeneous than previously acknowledged",
+      "the thermodynamic properties of superconducting materials at cryogenic temperatures have transformative implications for energy transmission infrastructure",
+      "extraterrestrial reconnaissance missions have irrevocably transformed our understanding of planetary formation and the distribution of water in the solar system",
+      "the idiosyncratic orthographic conventions of English orthography reflect centuries of etymological borrowing phonological shift and deliberate archaism",
+    ],
+  };
+
+  function pick(diff) {
+    const list = sentences[diff];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function buildWordList(diff, targetCount) {
+    const words = [];
+    while (words.length < targetCount) {
+      const sent = pick(diff).split(' ');
+      for (const w of sent) { if (words.length < targetCount) words.push(w); }
+    }
+    return words;
+  }
+
+  return {
+    getWords(diff, count = 40) { return buildWordList(diff, count); },
+    getPassage(diff) { return pick(diff); }
+  };
+})();
+
+// ════════════════════════════════════════════════════════
+//  XP SYSTEM
+// ════════════════════════════════════════════════════════
+const XP = (() => {
+  const THRESHOLDS = Array.from({length: 100}, (_, i) => Math.round(100 * Math.pow(1.15, i)));
+  let data;
+  try { data = JSON.parse(localStorage.getItem('typeforge_xp') || '{"total":0}'); } catch(e) { data = {total:0}; }
+
+  function save() { try { localStorage.setItem('typeforge_xp', JSON.stringify(data)); } catch(e) {} }
+
+  function getLevel(total) {
+    let lvl = 1, sum = 0;
+    while (lvl < THRESHOLDS.length && sum + THRESHOLDS[lvl-1] <= total) {
+      sum += THRESHOLDS[lvl-1]; lvl++;
+    }
+    return { level: lvl, xpInLevel: total - sum, xpNeeded: THRESHOLDS[lvl-1] };
+  }
+
+  function add(amount) {
+    const before = getLevel(data.total);
+    data.total += amount;
+    save();
+    const after = getLevel(data.total);
+    return { leveledUp: after.level > before.level, newLevel: after.level, info: after };
+  }
+
+  return {
+    getInfo() { return getLevel(data.total); },
+    add,
+    total() { return data.total; }
+  };
+})();
+
+// ════════════════════════════════════════════════════════
+//  PERSISTENCE (leaderboard, streak, stats)
+// ════════════════════════════════════════════════════════
+const Store = (() => {
+  function get(key, def) {
+    try { return JSON.parse(localStorage.getItem('typeforge_' + key)) ?? def; } catch { return def; }
+  }
+  function set(key, val) { try { localStorage.setItem('typeforge_' + key, JSON.stringify(val)); } catch(e) {} }
+
+  function getStreak() {
+    const s = get('streak', { count: 0, last: null });
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (s.last === today) return s.count;
+    if (s.last === yesterday) return s.count; // will be incremented on play
+    return 0;
+  }
+
+  function touchStreak() {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    let s = get('streak', { count: 0, last: null });
+    if (s.last === today) return s.count;
+    if (s.last === yesterday) s.count++;
+    else s.count = 1;
+    s.last = today;
+    set('streak', s);
+    return s.count;
+  }
+
+  function addScore(entry) {
+    const scores = get('scores', []);
+    scores.push(entry);
+    scores.sort((a, b) => b.wpm - a.wpm);
+    set('scores', scores.slice(0, 10));
+    return scores;
+  }
+
+  function getScores() { return get('scores', []); }
+  function getGames() { return get('games', 0); }
+  function incGames() { set('games', getGames() + 1); }
+  function getBestWpm() {
+    const s = getScores();
+    return s.length ? s[0].wpm : 0;
+  }
+
+  return { getStreak, touchStreak, addScore, getScores, getGames, incGames, getBestWpm };
+})();
+
+// ════════════════════════════════════════════════════════
+//  ACHIEVEMENT SYSTEM
+// ════════════════════════════════════════════════════════
+const Achievements = (() => {
+  const defs = [
+    { id: 'speed_demon',    icon: '🔥', name: 'Speed Demon',    desc: '80+ WPM',           check: s => s.wpm >= 80 },
+    { id: 'sonic',          icon: '⚡', name: 'Sonic',          desc: '100+ WPM',          check: s => s.wpm >= 100 },
+    { id: 'perfectionist',  icon: '💎', name: 'Perfectionist',  desc: '100% Accuracy',     check: s => s.acc === 100 },
+    { id: 'sharp',          icon: '🎯', name: 'Sharp',          desc: '95%+ Accuracy',     check: s => s.acc >= 95 },
+    { id: 'on_fire',        icon: '🌋', name: 'On Fire',        desc: '10× Combo',         check: s => s.maxCombo >= 10 },
+    { id: 'combo_king',     icon: '👑', name: 'Combo King',     desc: '20× Combo',         check: s => s.maxCombo >= 20 },
+    { id: 'consistent',     icon: '📈', name: 'Consistent',     desc: 'Hard difficulty',   check: s => s.diff === 'hard' || s.diff === 'expert' },
+    { id: 'survivor',       icon: '🛡️', name: 'Survivor',       desc: 'Survive 60s',       check: s => s.mode === 'survival' && s.elapsed >= 60 },
+    { id: 'first_game',     icon: '🎮', name: 'First Game',     desc: 'Play your first game', check: (_, games) => games === 1 },
+    { id: 'ten_games',      icon: '🏅', name: 'Dedicated',      desc: 'Play 10 games',     check: (_, games) => games >= 10 },
+  ];
+  let _ach; try { _ach = JSON.parse(localStorage.getItem('typeforge_ach') || '[]'); } catch(e) { _ach = []; }
+  const earned = new Set(_ach);
+
+  function check(stats, gamesPlayed) {
+    const newOnes = [];
+    for (const d of defs) {
+      if (!earned.has(d.id) && d.check(stats, gamesPlayed)) {
+        earned.add(d.id);
+        newOnes.push(d);
+      }
+    }
+    try { localStorage.setItem('typeforge_ach', JSON.stringify([...earned])); } catch(e) {}
+    return newOnes;
+  }
+
+  return { check };
+})();
+
+// ════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════
+function showToast(icon, text, color = '#f59e0b') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.style.borderColor = color;
+  el.style.color = color;
+  el.innerHTML = `<span style="font-size:1.3rem">${icon}</span> ${text}`;
+  c.appendChild(el);
+  SoundFX.achievement();
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+  }, 3000);
+}
+
+// ════════════════════════════════════════════════════════
+//  GAME STATE
+// ════════════════════════════════════════════════════════
+let state = {
+  mode: 'sprint',
+  diff: 'easy',
+  words: [],
+  wordIndex: 0,
+  charIndex: 0,
+  errors: 0,
+  totalChars: 0,
+  startTime: null,
+  combo: 1,
+  maxCombo: 1,
+  paused: false,
+  running: false,
+  // survival
+  survivalWords: [],
+  survivalScore: 0,
+  survivalLives: 3,
+  survivalElapsed: 0,
+  survivalRaf: null,
+};
+
+// ════════════════════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function updateHUD() {
+  const wpmEl = document.querySelector('#hud-wpm .val');
+  const accEl = document.querySelector('#hud-acc .val');
+  const comboEl = document.getElementById('hud-combo');
+  const xpInfo = XP.getInfo();
+
+  if (state.startTime && state.running) {
+    const mins = (Date.now() - state.startTime) / 60000;
+    const wpm = mins > 0 ? Math.round((state.wordIndex) / mins) : 0;
+    const total = state.totalChars;
+    const acc = total > 0 ? Math.round(100 * (total - state.errors) / total) : 100;
+    wpmEl.textContent = wpm;
+    accEl.textContent = acc + '%';
+  }
+
+  const c = state.combo;
+  comboEl.textContent = (c >= 5 ? '🔥 ' : '✦ ') + c + '×';
+  comboEl.className = 'combo-display';
+  if (c >= 2 && c < 5) comboEl.classList.add('glow-1');
+  else if (c >= 5 && c < 10) comboEl.classList.add('glow-2');
+  else if (c >= 10 && c < 15) comboEl.classList.add('glow-3');
+  else if (c >= 15 && c < 20) comboEl.classList.add('glow-4');
+  else if (c >= 20) comboEl.classList.add('glow-5');
+
+  document.getElementById('xp-level-label').textContent = 'Level ' + xpInfo.level;
+  document.getElementById('xp-progress-label').textContent = xpInfo.xpInLevel + ' / ' + xpInfo.xpNeeded + ' XP';
+  document.getElementById('xp-bar').style.width = (100 * xpInfo.xpInLevel / xpInfo.xpNeeded) + '%';
+}
+
+function updateMenuStats() {
+  const xpInfo = XP.getInfo();
+  document.getElementById('ms-level').textContent = xpInfo.level;
+  document.getElementById('ms-streak').textContent = Store.getStreak();
+  document.getElementById('ms-best').textContent = Store.getBestWpm();
+  document.getElementById('ms-games').textContent = Store.getGames();
+}
+
+// ════════════════════════════════════════════════════════
+//  SPRINT MODE
+// ════════════════════════════════════════════════════════
+function buildWords(words) {
+  const container = document.getElementById('words-container');
+  container.innerHTML = '';
+  words.forEach((w, wi) => {
+    const span = document.createElement('span');
+    span.className = 'word' + (wi === 0 ? ' current' : '');
+    span.id = 'word-' + wi;
+    w.split('').forEach(ch => {
+      const c = document.createElement('span');
+      c.className = 'char';
+      c.textContent = ch;
+      span.appendChild(c);
+    });
+    container.appendChild(span);
+  });
+  document.getElementById('progress-bar').style.width = '0%';
+}
+
+function refreshWord() {
+  const wi = state.wordIndex;
+  const word = state.words[wi];
+  const el = document.getElementById('word-' + wi);
+  if (!el) return;
+
+  const chars = el.querySelectorAll('.char');
+  chars.forEach((c, i) => {
+    c.className = 'char';
+    if (i < state.charIndex) {
+      const typed = state.typedWord ? state.typedWord[i] : '';
+      c.className = 'char ' + (typed === word[i] ? 'correct' : 'wrong');
+    } else if (i === state.charIndex) {
+      c.className = 'char cursor';
+    }
+  });
+
+  // scroll into view
+  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function advanceWord(correct) {
+  const wi = state.wordIndex;
+  const el = document.getElementById('word-' + wi);
+  if (el) {
+    el.classList.remove('current');
+    el.classList.add('done');
+  }
+
+  if (correct) {
+    state.combo++;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
+    if (state.combo > 1 && state.combo % 5 === 0) SoundFX.combo(Math.floor(state.combo / 5));
+    else SoundFX.correct();
+  } else {
+    state.combo = 1;
+    SoundFX.error();
+    if (el) { el.classList.add('shake'); setTimeout(() => el.classList.remove('shake'), 300); }
+  }
+
+  state.wordIndex++;
+  state.charIndex = 0;
+  state.typedWord = '';
+
+  const next = document.getElementById('word-' + state.wordIndex);
+  if (next) next.classList.add('current');
+
+  const progress = state.wordIndex / state.words.length;
+  document.getElementById('progress-bar').style.width = (progress * 100) + '%';
+
+  if (state.wordIndex >= state.words.length) {
+    endGame();
+    return;
+  }
+  refreshWord();
+  updateHUD();
+}
+
+function handleSprintInput(e) {
+  if (!state.running || state.paused) return;
+  if (!state.startTime) state.startTime = Date.now();
+
+  const input = e.target;
+  const val = input.value;
+
+  // Space or Enter = submit word
+  if (val.endsWith(' ') || e.key === 'Enter') {
+    const typed = val.trim();
+    const expected = state.words[state.wordIndex];
+    state.totalChars += expected.length;
+    state.typedWord = typed;
+    const correct = typed === expected;
+    if (!correct) state.errors += Math.abs(typed.length - expected.length) + 1;
+    input.value = '';
+    advanceWord(correct);
+    return;
+  }
+
+  state.typedWord = val;
+  state.charIndex = val.length;
+  state.totalChars = Math.max(state.totalChars, state.wordIndex * 5 + val.length);
+
+  // per-char wrong sound
+  const expected = state.words[state.wordIndex];
+  if (val.length > 0) {
+    const last = val[val.length - 1];
+    const exp = expected[val.length - 1];
+    if (last !== exp) { SoundFX.error(); }
+    else { SoundFX.keypress(); }
+  }
+
+  refreshWord();
+  updateHUD();
+}
+
+// ════════════════════════════════════════════════════════
+//  SURVIVAL MODE
+// ════════════════════════════════════════════════════════
+const Survival = (() => {
+  const canvas = document.getElementById('survival-canvas');
+  const ctx = canvas.getContext('2d');
+  const input = document.getElementById('survival-input');
+  let words = [], raf, lastTime, elapsed;
+
+  const COLORS = ['#7c3aed','#06b6d4','#10b981','#f59e0b','#f97316'];
+  const SPEED_BASE = 30; // px/s
+
+  function reset() {
+    words = [];
+    elapsed = 0;
+    lastTime = null;
+    state.survivalScore = 0;
+    state.survivalElapsed = 0;
+    input.value = '';
+    spawnWord();
+    spawnWord();
+  }
+
+  function spawnWord() {
+    const pool = WordBank.getWords(state.diff, 1);
+    const text = pool[0];
+    const x = 40 + Math.random() * (canvas.width - 140);
+    words.push({
+      text,
+      x,
+      y: -30,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      speed: SPEED_BASE + elapsed * 3
+    });
+  }
+
+  function draw(ts) {
+    if (!lastTime) lastTime = ts;
+    if (state.paused) { raf = requestAnimationFrame(draw); return; }
+
+    const dt = Math.min((ts - lastTime) / 1000, 0.1);
+    lastTime = ts;
+    elapsed += dt;
+    state.survivalElapsed = elapsed;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // bg
+    ctx.fillStyle = '#12121e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // danger zone line
+    ctx.strokeStyle = 'rgba(239,68,68,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath(); ctx.moveTo(0, canvas.height - 50); ctx.lineTo(canvas.width, canvas.height - 50); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(239,68,68,0.4)';
+    ctx.font = '11px monospace';
+    ctx.fillText('DANGER ZONE', 10, canvas.height - 34);
+
+    // lives
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = i < state.survivalLives ? '#ef4444' : '#2a2a4a';
+      ctx.font = '20px sans-serif';
+      ctx.fillText('❤', canvas.width - 30 - i * 28, 28);
+    }
+
+    // score
+    ctx.fillStyle = '#7c3aed';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('Score: ' + state.survivalScore, 12, 28);
+
+    // time
+    ctx.fillStyle = '#06b6d4';
+    ctx.fillText('Time: ' + Math.floor(elapsed) + 's', 12, 48);
+
+    // typed preview
+    const typed = input.value;
+    const matched = words.filter(w => w.text.startsWith(typed) && typed.length > 0);
+
+    // move + draw words
+    const toRemove = [];
+    for (const w of words) {
+      w.y += w.speed * dt;
+      const isMatched = matched.includes(w);
+
+      ctx.font = 'bold 18px monospace';
+      const metrics = ctx.measureText(w.text);
+      const pw = metrics.width + 16;
+
+      // pill bg
+      ctx.fillStyle = isMatched ? 'rgba(16,185,129,0.2)' : 'rgba(18,18,30,0.85)';
+      ctx.strokeStyle = isMatched ? '#10b981' : w.color;
+      ctx.lineWidth = isMatched ? 2 : 1;
+      roundRect(ctx, w.x - 8, w.y - 20, pw, 28, 6);
+      ctx.fill(); ctx.stroke();
+
+      // text
+      if (isMatched && typed.length > 0) {
+        ctx.fillStyle = '#10b981';
+        ctx.fillText(typed, w.x, w.y);
+        ctx.fillStyle = '#e0e0ff';
+        ctx.fillText(w.text.slice(typed.length), w.x + ctx.measureText(typed).width, w.y);
+      } else {
+        ctx.fillStyle = w.color;
+        ctx.fillText(w.text, w.x, w.y);
+      }
+
+      if (w.y > canvas.height - 50) {
+        toRemove.push(w);
+        state.survivalLives--;
+        state.combo = 1;
+        SoundFX.gameOver();
+        if (state.survivalLives <= 0) { endGame(); return; }
+      }
+    }
+
+    for (const w of toRemove) words.splice(words.indexOf(w), 1);
+
+    // spawn logic
+    if (Math.random() < dt * (0.5 + elapsed * 0.02)) spawnWord();
+
+    updateHUD();
+    raf = requestAnimationFrame(draw);
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function handleInput() {
+    const typed = input.value.trim();
+    const hit = words.find(w => w.text === typed);
+    if (hit) {
+      words.splice(words.indexOf(hit), 1);
+      input.value = '';
+      state.survivalScore += hit.text.length;
+      state.wordIndex++;
+      state.combo++;
+      state.maxCombo = Math.max(state.maxCombo, state.combo);
+      SoundFX.correct();
+      updateHUD();
+    }
+  }
+
+  return {
+    start() {
+      state.survivalLives = 3;
+      reset();
+      canvas.style.display = 'block';
+      document.getElementById('survival-input-row').style.display = 'flex';
+      document.getElementById('game-area-sprint').style.display = 'none';
+      document.getElementById('zen-display').style.display = 'none';
+      input.addEventListener('input', handleInput);
+      input.focus();
+      raf = requestAnimationFrame(draw);
+    },
+    stop() {
+      if (raf) cancelAnimationFrame(raf);
+      canvas.style.display = 'none';
+      document.getElementById('survival-input-row').style.display = 'none';
+      input.removeEventListener('input', handleInput);
+    }
+  };
+})();
+
+// ════════════════════════════════════════════════════════
+//  ZEN MODE
+// ════════════════════════════════════════════════════════
+function startZen() {
+  const words = WordBank.getWords(state.diff, 60);
+  const passage = words.join(' ');
+  const zen = document.getElementById('zen-display');
+  const ta = document.getElementById('zen-text-area');
+  zen.style.display = 'flex';
+  document.getElementById('game-area-sprint').style.display = 'none';
+  document.getElementById('survival-canvas').style.display = 'none';
+  document.getElementById('survival-input-row').style.display = 'none';
+  ta.value = '';
+  ta.placeholder = passage;
+  state.words = words;
+  state.wordIndex = 0;
+  state.charIndex = 0;
+  state.typedWord = '';
+
+  ta.oninput = () => {
+    if (!state.startTime) state.startTime = Date.now();
+    const typed = ta.value.split(' ');
+    const correct = typed.filter((w, i) => w === words[i]).length;
+    const prog = Math.min(typed.length / words.length, 1);
+    document.getElementById('zen-progress').style.width = (prog * 100) + '%';
+    state.wordIndex = typed.length;
+    state.totalChars = ta.value.length;
+    state.errors = typed.reduce((acc, w, i) => acc + (words[i] && w !== words[i] ? 1 : 0), 0);
+    if (typed.length >= words.length && ta.value.trim().split(' ').length >= words.length) {
+      endGame();
+    }
+    updateHUD();
+  };
+  ta.focus();
+}
+
+// ════════════════════════════════════════════════════════
+//  COUNTDOWN + START
+// ════════════════════════════════════════════════════════
+function countdown(cb) {
+  const overlay = document.getElementById('countdown-overlay');
+  const num = document.getElementById('count-num');
+  overlay.classList.remove('hidden');
+  let n = 3;
+  num.textContent = n;
+  num.className = 'count-anim';
+
+  const tick = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(tick);
+      overlay.classList.add('hidden');
+      cb();
+      return;
+    }
+    num.className = '';
+    void num.offsetWidth;
+    num.className = 'count-anim';
+    num.textContent = n;
+    SoundFX.keypress();
+  }, 800);
+}
+
+function startGame() {
+  state.words = WordBank.getWords(state.diff, 50);
+  state.wordIndex = 0;
+  state.charIndex = 0;
+  state.typedWord = '';
+  state.errors = 0;
+  state.totalChars = 0;
+  state.startTime = null;
+  state.combo = 1;
+  state.maxCombo = 1;
+  state.paused = false;
+  state.running = true;
+
+  showScreen('screen-game');
+  document.getElementById('hud').classList.remove('hidden');
+
+  // hide all game UIs
+  document.getElementById('game-area-sprint').style.display = '';
+  document.getElementById('survival-canvas').style.display = 'none';
+  document.getElementById('survival-input-row').style.display = 'none';
+  document.getElementById('zen-display').style.display = 'none';
+
+  if (state.mode === 'sprint') {
+    buildWords(state.words);
+    countdown(() => {
+      state.startTime = Date.now();
+      const input = document.getElementById('typing-input');
+      document.getElementById('click-hint').classList.add('gone');
+      input.focus();
+      input.value = '';
+      input.oninput = handleSprintInput;
+      input.onkeydown = e => { if (e.key === 'Enter') handleSprintInput({target: input, key: 'Enter'}); };
+    });
+  } else if (state.mode === 'survival') {
+    countdown(() => {
+      state.startTime = Date.now();
+      Survival.start();
+    });
+  } else {
+    countdown(() => {
+      state.startTime = Date.now();
+      startZen();
+    });
+  }
+
+  updateHUD();
+
+  // HUD interval
+  clearInterval(window._hudInterval);
+  window._hudInterval = setInterval(() => { if (state.running && !state.paused) updateHUD(); }, 500);
+}
+
+// ════════════════════════════════════════════════════════
+//  END GAME
+// ════════════════════════════════════════════════════════
+function endGame() {
+  state.running = false;
+  clearInterval(window._hudInterval);
+
+  if (state.mode === 'survival') Survival.stop();
+  document.getElementById('hud').classList.add('hidden');
+
+  const elapsed = state.startTime ? (Date.now() - state.startTime) / 60000 : 1;
+  const wpm = Math.round((state.mode === 'survival' ? state.survivalScore / 5 : state.wordIndex) / Math.max(elapsed, 0.01));
+  const total = Math.max(state.totalChars, 1);
+  const acc = Math.round(100 * Math.max(0, total - state.errors) / total);
+  const xpEarned = Math.round(wpm * (acc / 100) * state.combo * 2);
+
+  Store.incGames();
+  Store.touchStreak();
+  const scores = Store.addScore({ wpm, acc, mode: state.mode, diff: state.diff, date: new Date().toLocaleDateString() });
+  const gamesPlayed = Store.getGames();
+
+  const xpResult = XP.add(xpEarned);
+  if (xpResult.leveledUp) {
+    SoundFX.levelUp();
+    showToast('🎉', 'Level Up! You\'re now Level ' + xpResult.newLevel, '#06b6d4');
+  }
+
+  const newAchievements = Achievements.check({
+    wpm, acc, maxCombo: state.maxCombo, diff: state.diff, mode: state.mode,
+    elapsed: state.mode === 'survival' ? state.survivalElapsed : elapsed * 60
+  }, gamesPlayed);
+
+  newAchievements.forEach((a, i) => {
+    setTimeout(() => showToast(a.icon, a.name + ' — ' + a.desc), i * 500);
+  });
+
+  // Suggest difficulty
+  let suggestDiff = null;
+  if (wpm > 70 && acc > 92 && state.diff !== 'expert') {
+    const map = { easy: 'medium', medium: 'hard', hard: 'expert' };
+    suggestDiff = map[state.diff];
+  } else if (wpm < 30 && state.diff !== 'easy') {
+    const map = { medium: 'easy', hard: 'medium', expert: 'hard' };
+    suggestDiff = map[state.diff];
+  }
+
+  showScreen('screen-results');
+
+  document.getElementById('res-wpm').textContent = wpm;
+  document.getElementById('res-acc').textContent = acc + '%';
+  document.getElementById('res-xp').textContent = '+' + xpEarned;
+  document.getElementById('res-combo').textContent = state.maxCombo + '×';
+
+  const title = wpm >= 80 ? '🔥 Blazing Fast!' : wpm >= 50 ? '⚡ Great Run!' : wpm >= 30 ? '👍 Good Job!' : '💪 Keep Practicing!';
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-sub').textContent = wpm + ' WPM · ' + acc + '% Accuracy · ' + xpEarned + ' XP earned';
+
+  // achievements row
+  const row = document.getElementById('achievements-row');
+  row.innerHTML = '';
+  newAchievements.forEach((a, i) => {
+    const el = document.createElement('div');
+    el.className = 'achievement-badge';
+    el.style.animationDelay = i * 0.15 + 's';
+    el.innerHTML = `<span style="font-size:1.3rem">${a.icon}</span> ${a.name}`;
+    row.appendChild(el);
+  });
+
+  // leaderboard
+  const lbEl = document.getElementById('lb-rows');
+  lbEl.innerHTML = '';
+  const newIdx = scores.findIndex(s => s.wpm === wpm && s.acc === acc && s.date === new Date().toLocaleDateString());
+  scores.slice(0, 8).forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'lb-row' + (i === 0 && newIdx === 0 ? ' new-entry' : '');
+    row.innerHTML = `
+      <span class="rank">${i + 1}</span>
+      <span>${s.date}</span>
+      <span class="lb-wpm">${s.wpm}</span>
+      <span class="lb-acc">${s.acc}%</span>
+      <span style="color:var(--text-dim);font-size:0.8rem">${s.mode}</span>
+    `;
+    lbEl.appendChild(row);
+  });
+
+  if (suggestDiff) {
+    const suggest = document.getElementById('diff-suggest');
+    document.getElementById('diff-suggest-text').textContent = `Nice! Try ${suggestDiff} difficulty?`;
+    suggest.style.display = 'flex';
+    document.getElementById('diff-suggest-btn').onclick = () => {
+      state.diff = suggestDiff;
+      document.querySelectorAll('.diff-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.diff === suggestDiff);
+      });
+      suggest.style.display = 'none';
+    };
+  } else {
+    document.getElementById('diff-suggest').style.display = 'none';
+  }
+
+  updateMenuStats();
+}
+
+// ════════════════════════════════════════════════════════
+//  PAUSE
+// ════════════════════════════════════════════════════════
+function togglePause() {
+  state.paused = !state.paused;
+  document.getElementById('pause-overlay').classList.toggle('hidden', !state.paused);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && state.running) togglePause();
+  if (!state.running) return;
+  // keep focus on sprint input
+  if (state.mode === 'sprint') {
+    const input = document.getElementById('typing-input');
+    if (document.activeElement !== input && !state.paused) input.focus();
+  }
+});
+
+document.getElementById('words-display').addEventListener('click', () => {
+  document.getElementById('click-hint').classList.add('gone');
+  document.getElementById('typing-input').focus();
+});
+
+// ════════════════════════════════════════════════════════
+//  MENU WIRING
+// ════════════════════════════════════════════════════════
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+  });
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.diff = btn.dataset.diff;
+  });
+});
+
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-play-again').addEventListener('click', startGame);
+document.getElementById('btn-menu').addEventListener('click', () => {
+  state.running = false;
+  if (state.mode === 'survival') Survival.stop();
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('diff-suggest').style.display = 'none';
+  showScreen('screen-menu');
+  updateMenuStats();
+});
+
+document.getElementById('btn-pause').addEventListener('click', togglePause);
+document.getElementById('btn-resume').addEventListener('click', () => {
+  state.paused = false;
+  document.getElementById('pause-overlay').classList.add('hidden');
+  if (state.mode === 'sprint') document.getElementById('typing-input').focus();
+  if (state.mode === 'survival') document.getElementById('survival-input').focus();
+});
+document.getElementById('btn-quit').addEventListener('click', () => {
+  state.running = false;
+  state.paused = false;
+  document.getElementById('pause-overlay').classList.add('hidden');
+  if (state.mode === 'survival') Survival.stop();
+  document.getElementById('hud').classList.add('hidden');
+  showScreen('screen-menu');
+  updateMenuStats();
+});
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+updateMenuStats();
+showScreen('screen-menu');
+</script>
+</body>
+</html>
