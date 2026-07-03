@@ -325,6 +325,7 @@
     border-radius: 16px;
     padding: 28px 32px;
     min-height: 120px;
+    max-height: 220px;
     position: relative;
     overflow: hidden;
   }
@@ -1313,8 +1314,9 @@ function refreshWord() {
     }
   });
 
-  // scroll into view
-  el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  // keep the current line in view inside the words box
+  const disp = document.getElementById('words-display');
+  disp.scrollTo({ top: Math.max(0, el.offsetTop - 90), behavior: 'smooth' });
 }
 
 function advanceWord(correct) {
@@ -1642,7 +1644,7 @@ function startGame() {
   state.combo = 1;
   state.maxCombo = 1;
   state.paused = false;
-  state.running = true;
+  state.running = false;
 
   showScreen('screen-game');
   document.getElementById('hud').classList.remove('hidden');
@@ -1653,24 +1655,41 @@ function startGame() {
   document.getElementById('survival-input-row').style.display = 'none';
   document.getElementById('zen-display').style.display = 'none';
 
+  // Focus inputs synchronously inside the START tap gesture — this is what
+  // makes iOS Safari open the on-screen keyboard without a second tap.
   if (state.mode === 'sprint') {
     buildWords(state.words);
+    const input = document.getElementById('typing-input');
+    document.getElementById('click-hint').classList.add('gone');
+    input.value = '';
+    input.oninput = handleSprintInput;
+    input.onkeydown = e => { if (e.key === 'Enter') handleSprintInput({target: input, key: 'Enter'}); };
+    input.focus();
     countdown(() => {
+      state.running = true;
       state.startTime = Date.now();
-      const input = document.getElementById('typing-input');
-      document.getElementById('click-hint').classList.add('gone');
-      input.focus();
       input.value = '';
-      input.oninput = handleSprintInput;
-      input.onkeydown = e => { if (e.key === 'Enter') handleSprintInput({target: input, key: 'Enter'}); };
+      input.focus();
     });
   } else if (state.mode === 'survival') {
+    const sInput = document.getElementById('survival-input');
+    document.getElementById('game-area-sprint').style.display = 'none';
+    document.getElementById('survival-input-row').style.display = 'flex';
+    sInput.value = '';
+    sInput.focus();
     countdown(() => {
+      state.running = true;
       state.startTime = Date.now();
       Survival.start();
     });
   } else {
+    const ta = document.getElementById('zen-text-area');
+    document.getElementById('game-area-sprint').style.display = 'none';
+    document.getElementById('zen-display').style.display = 'flex';
+    ta.value = '';
+    ta.focus();
     countdown(() => {
+      state.running = true;
       state.startTime = Date.now();
       startZen();
     });
