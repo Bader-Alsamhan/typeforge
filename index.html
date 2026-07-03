@@ -328,7 +328,23 @@
     max-height: 220px;
     position: relative;
     overflow: hidden;
+    scroll-behavior: smooth;
   }
+
+  @media (max-width: 600px) {
+    #words-display { padding: 16px 18px; max-height: 170px; min-height: 100px; }
+  }
+
+  /* When the on-screen keyboard is open, the game screen is pinned to the
+     visual viewport by JS (top/height set inline) — lay out from the top so
+     the typing area sits in the visible strip above the keyboard. */
+  body.kb-open #screen-game {
+    bottom: auto;
+    justify-content: flex-start;
+    padding-top: 78px; /* clear the fixed HUD */
+  }
+  body.kb-open #hud { padding: 8px 16px; }
+  body.kb-open #words-display { max-height: 150px; }
 
   #words-container {
     display: flex;
@@ -1314,9 +1330,12 @@ function refreshWord() {
     }
   });
 
-  // keep the current line in view inside the words box
+  // Keep the current line near the top of the words box, with one finished
+  // line above it for context. offsetTop is relative to #words-display
+  // (position: relative), so subtract one line height plus the box padding.
   const disp = document.getElementById('words-display');
-  disp.scrollTo({ top: Math.max(0, el.offsetTop - 90), behavior: 'smooth' });
+  const lineHeight = el.offsetHeight + 10; // word height + flex gap
+  disp.scrollTop = Math.max(0, el.offsetTop - lineHeight - 20);
 }
 
 function advanceWord(correct) {
@@ -1827,6 +1846,34 @@ document.getElementById('words-display').addEventListener('click', () => {
   document.getElementById('click-hint').classList.add('gone');
   document.getElementById('typing-input').focus();
 });
+
+// ── Mobile keyboard handling ──
+// When the on-screen keyboard opens, iOS shrinks and pans the visual viewport
+// while position:fixed elements stay laid out against the full layout
+// viewport — so the HUD and typing area drift under the keyboard. Pin them
+// to the visual viewport instead whenever it is meaningfully shorter than
+// the layout viewport.
+(function () {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const hud = document.getElementById('hud');
+  const game = document.getElementById('screen-game');
+  function fit() {
+    const kbOpen = vv.height < window.innerHeight - 80;
+    document.body.classList.toggle('kb-open', kbOpen);
+    if (kbOpen) {
+      hud.style.top = vv.offsetTop + 'px';
+      game.style.top = vv.offsetTop + 'px';
+      game.style.height = vv.height + 'px';
+    } else {
+      hud.style.top = '';
+      game.style.top = '';
+      game.style.height = '';
+    }
+  }
+  vv.addEventListener('resize', fit);
+  vv.addEventListener('scroll', fit);
+})();
 
 // ════════════════════════════════════════════════════════
 //  MENU WIRING
